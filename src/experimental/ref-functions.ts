@@ -75,7 +75,7 @@ export const routerFunctionRefMiddleware = (router: RpcRouter) => {
             router.addRoute(`/fns/${fnRef}`, x as (...args: unknown[]) => unknown);
             return {
                 __FunctionRef$: fnRef,
-                __FunctionRefType$: 'promise',
+                __FunctionRefType$: 'promise', // need to think how to hack around this limitation
             } as FunctionRef$<T>
         }
         if (Array.isArray(x)) {
