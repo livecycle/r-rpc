@@ -1,6 +1,6 @@
 import { from, isObservable, of } from 'rxjs';
-import { convertToAsyncIterable } from './utils/async-it';
-import Trie from './utils/trie';
+import { convertToAsyncIterable } from './utils/async-it.js';
+import Trie from './utils/trie.js';
 function isPromiseLike(value) {
     return value && typeof value.then === 'function';
 }

@@ -1,5 +1,5 @@
-export * from './contracts';
-export * from './router';
-export * from './client';
-export * from './proxy';
+export * from './contracts.js';
+export * from './router.js';
+export * from './client.js';
+export * from './proxy.js';
 //# sourceMappingURL=index.d.ts.map

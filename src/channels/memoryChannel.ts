@@ -1,5 +1,5 @@
 import EventEmitter from 'events';
-import { RemoteCallObject, RemoteResult, TransportInvoker, TransportListener, TransportResponder } from '../core';
+import { RemoteCallObject, RemoteResult, TransportInvoker, TransportListener, TransportResponder } from '../core/index.js';
 
 export function createMemoryChannel(input: EventEmitter, output: EventEmitter) {
   const onCall: TransportListener = (fn) => {

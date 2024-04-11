@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { Observable, toArray } from 'rxjs';
-import { createMemoryChannel } from './channels/memoryChannel';
-import { createClient, createProxy, createRouter, registerService } from './core';
+import { createMemoryChannel } from './channels/memoryChannel.js';
+import { createClient, createProxy, createRouter, registerService } from './core/index.js';
 
 describe('rpc tests', () => {
   let router: ReturnType<typeof createRouter>;

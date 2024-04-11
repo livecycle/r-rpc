@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import EventEmitter from 'events';
-import { TransportInvoker, TransportListener, TransportResponder } from '../core';
+import { TransportInvoker, TransportListener, TransportResponder } from '../core/index.js';
 export declare function createMemoryChannel(input: EventEmitter, output: EventEmitter): {
     onCall: TransportListener;
     respond: TransportResponder;

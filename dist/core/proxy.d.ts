@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { RpcClient } from './client';
+import { RpcClient } from './client.js';
 declare const $iter: "$Iter";
 export type ProxyType<T, deep = true> = T extends (...args: any[]) => infer R ? (...args: Parameters<T>) => ProxyType<R, false> : T extends Observable<unknown> ? T : T extends string ? Promise<string> : T extends ReadonlyArray<unknown> ? Promise<T> : T extends Iterable<infer X> ? AsyncIterable<X> : T extends Generator<infer X, infer X2, infer X3> ? AsyncGenerator<X, X2, X3> : T extends AsyncIterable<unknown> ? T : T extends AsyncGenerator<unknown, unknown, unknown> ? T : T extends PromiseLike<infer R> ? Promise<R> : T extends {
     [key: string]: any;

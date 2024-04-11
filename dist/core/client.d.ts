@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { TransportInvoker } from './contracts';
+import { TransportInvoker } from './contracts.js';
 export declare function createClient(invoker: TransportInvoker, idGen?: () => string): {
     functionRef<T extends (...args: any[]) => any>(address: string): (...args: Parameters<T>) => Promise<ReturnType<T>>;
     functionGenRef<T_1 extends (...args: any[]) => any>(address: string): (...args: Parameters<T_1>) => AsyncGenerator<Awaited<ReturnType<T_1> extends AsyncGenerator<infer U, any, unknown> ? U : never>, unknown, unknown>;

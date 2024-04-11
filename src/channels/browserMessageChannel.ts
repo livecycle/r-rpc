@@ -6,7 +6,7 @@ import {
   TransportInvoker,
   TransportListener,
   TransportResponder,
-} from '..';
+} from '../index.js';
 
 type Postable = MessagePort | Window;
 

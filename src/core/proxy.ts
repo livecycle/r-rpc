@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { RpcClient } from './client';
+import { RpcClient } from './client.js';
 
 const $iter = '$Iter' as const;
 

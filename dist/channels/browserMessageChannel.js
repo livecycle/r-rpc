@@ -1,4 +1,4 @@
-import { createClient, createRouter, } from '..';
+import { createClient, createRouter, } from '../index.js';
 export function createPostMessageClient(clientId, target, outgoingPort) {
     const corMap = new Map();
     let sentOngoingPort = false;

@@ -1,5 +1,5 @@
 import { lastValueFrom, Observable } from 'rxjs';
-import { RemoteCall, RemoteResult, TransportInvoker } from './contracts';
+import { RemoteCall, RemoteResult, TransportInvoker } from './contracts.js';
 
 const ID = function () {
   return Math.random().toString(36).substring(2, 9);

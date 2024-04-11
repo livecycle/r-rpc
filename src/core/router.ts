@@ -1,7 +1,7 @@
 import { from, isObservable, Observable, of } from 'rxjs';
-import { RemoteCall, RemoteCallObject, RemoteResult, TransportListener, TransportResponder } from './contracts';
-import { convertToAsyncIterable } from './utils/async-it';
-import Trie from './utils/trie';
+import { RemoteCall, RemoteCallObject, RemoteResult, TransportListener, TransportResponder } from './contracts.js';
+import { convertToAsyncIterable } from './utils/async-it.js';
+import Trie from './utils/trie.js';
 
 function isPromiseLike<T>(value: PromiseLike<T> | T): value is PromiseLike<T> {
   return value && typeof (value as any).then === 'function';
