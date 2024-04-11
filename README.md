@@ -1,6 +1,6 @@
 # r-rpc
 
-**r-rpc** is a library for remote procedure calls (RPC) that enables communication between different parts of an application, potentially running in different environments (e.g., browser and server). It supports various communication paradigms, including functions, generators, and observables.
+**r-rpc** is a library for remote procedure calls (RPC) that enables communication between different parts of an application, potentially running in different environments (e.g., browser and server). It supports various communication paradigms, including async functions, generators, and observables.
 
 ## Features
 
@@ -13,8 +13,6 @@
 *   **Flexible Transport:**  r-rpc can be adapted to different communication channels by implementing the transport interfaces.
 *   **Type Safety:**  Advanced TypeScript types and proxies are used to ensure end to end type safety with great developer experience.
 *   **Layered API:**  Provides both high-level and low-level APIs for flexibility and control.
-
-
 
 ## Getting Started
 
