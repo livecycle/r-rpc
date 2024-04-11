@@ -279,7 +279,7 @@ const client = createClient(invoker);
 
 **By implementing custom channels, you can adapt r-rpc to any communication technology that suits your application's requirements.** 
 
-## Experimental Feature: Remote Function References
+## Remote Function References (Experimental)
 
 r-rpc is experimenting with a new feature that allows you to return function references from remote procedure calls. This means that you can now pass functions as return values, enabling more complex and dynamic interactions between client and server. 
 
