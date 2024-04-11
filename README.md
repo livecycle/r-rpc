@@ -305,8 +305,35 @@ const counterFn = await client.functionRef('createCounter')(); // Get the remote
 const result1 = await counterFn(); // Call the remote function (returns 1)
 const result2 = await counterFn(); // Call again (returns 2)
 ```
-
 In this example, the `createCounter` function on the server returns a function that increments a counter. The client obtains a reference to this remote function and can call it multiple times, each time incrementing the counter on the server and receiving the updated value.
+
+We can also use the high-level API with proxies to work with function references more easily:
+
+```typescript
+const counterGen = {
+  createCounter: (start: number)=> {
+      let count = start
+      return {
+          inc: () => ++count,
+          dec: () => --count,
+          current: () => count
+      }
+    }
+};
+
+registerService(router, "counter-gen", counterGen);
+const remoteService = createProxy<typeof counterGen>(client, "counter-gen");
+const counter1 = await remoteService.createCounter(0);
+const counter2 = await remoteService.createCounter(0);
+
+// All methods are correctly typed and converted to async signatures if needed
+await counter1.inc();
+await counter1.inc();
+await counter1.dec();
+await counter2.dec();
+console.log(await counter1.current()); // 1
+console.log(await counter2.current()); // -1;
+```
 
 **Benefits:**
 
@@ -319,7 +346,6 @@ In this example, the `createCounter` function on the server returns a function t
 *   **Closures:** Closures are currently kept alive on the server as long as the client holds a reference to the function. 
 *   **Garbage Collection:** Unused function references on the client need to be garbage collected properly to avoid memory leaks and release server-side resources. r-rpc uses a `FinalizationRegistry` to track and clean up references when they are no longer used.
 *   **No support for iterators/observables at this point:** The current implementation does not support returning a function that return iterators or observables as function references. This may change in future versions. 
-
 
 **API and Middleware:**
 

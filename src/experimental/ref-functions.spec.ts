@@ -1,4 +1,4 @@
-import { createRouter, createClient } from "../core/index.js";
+import { createRouter, createClient, registerService, createProxy } from "../core/index.js";
 import { createMemoryChannel } from "../channels/memoryChannel.js";
 import EventEmitter from "node:events";
 import {
@@ -101,5 +101,42 @@ describe("experimental - ref functions", () => {
     (global as any).gc();
     await new Promise((r) => setTimeout(r, 50));
     expect(listRoutes(router, "/fns").length).toEqual(0);
+  });
+
+  it("should work properly with proxy - func", async () => {
+    const service = {
+      createCounter: ()=> {
+        let count = 0;
+        return () => ++count;
+      }
+    };
+
+    registerService(router, "my-service", service);
+    const proxy = createProxy<typeof service>(client, "my-service");
+    const inc = await proxy.createCounter();
+    await inc();
+    expect(await inc()).toEqual(2);
+  });
+
+  it("should work properly with proxy - object", async () => {
+    const service = {
+        createCounter: ()=> {
+            let count = 0;
+            return {
+                inc: () => ++count,
+                dec: () => --count,
+                current: () => count
+            }
+          }
+    };
+
+    registerService(router, "my-service", service);
+    const proxy = createProxy<typeof service>(client, "my-service");
+    const counter = await proxy.createCounter();
+    await counter.inc();
+    await counter.inc();
+    await counter.inc();
+    await counter.dec();
+    expect(await counter.current()).toEqual(2);
   });
 });
