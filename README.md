@@ -15,30 +15,30 @@
 
 **Installation:**
 
-\`\`\`bash
+```bash
 npm install r-rpc
-\`\`\`
+```
 
 ### Setup - Creating Router and Client
 
 **Server (Router):**
 
-\`\`\`typescript
+```typescript
 import { createRouter } from 'r-rpc';
 
 // Replace with your actual transport listener and responder
 const router = createRouter(/* transport listener */, /* transport responder */); 
 router.bind(); // Start listening for requests
-\`\`\`
+```
 
 **Client:**
 
-\`\`\`typescript
+```typescript
 import { createClient } from 'r-rpc';
 
 // Replace with your actual transport invoker
 const client = createClient(/* transport invoker */);
-\`\`\`
+```
 
 ### High-Level API - Proxies and Services
 
@@ -46,7 +46,7 @@ const client = createClient(/* transport invoker */);
 
 **Example: Service with Multiple Methods and Return Types**
 
-\`\`\`typescript
+```typescript
 import { registerService } from 'r-rpc';
 import { Observable } from 'rxjs';
 
@@ -79,11 +79,11 @@ const service = {
 };
 
 registerService(router, 'myService', service);
-\`\`\`
+```
 
 **Client (Proxy Usage):**
 
-\`\`\`typescript
+```typescript
 import { createProxy } from 'r-rpc';
 
 const myServiceProxy = createProxy<typeof service>(client, 'myService');
@@ -107,18 +107,18 @@ subscription.unsubscribe();
 
 // Call async function
 const delayedSumResult = await myServiceProxy.delayedSum(20, 30);
-\`\`\`
+```
 
 ### Low-Level API - Direct Function Calls
 
-\`\`\`typescript
+```typescript
 // Client-side:
 type sumFunction = (a: number, b: number) => number
 const sumResult = await client.functionRef<sumFunction>('some-service/sum')(5, 10);
 
 // Server-side:
 router.addRoute('some-service/sum', (a, b) => { a + b});
-\`\`\`
+```
 
 ## Architecture 
 
