@@ -7,9 +7,12 @@
 *   **Function Calls:** Invoke remote functions with arguments and receive their return values.
 *   **Generators:** Execute remote generators (sync/async) and iterate over the yielded values (no support for sending data bi-directionally with next()). 
 *   **Observables:** Subscribe to remote observables and react to emitted values and events.
+*   **Error Propagation and handling:** Errors are propagated back to the caller and can be caught and handled.
 *   **Flexible Transport:**  r-rpc can be adapted to different communication channels by implementing the transport interfaces.
 *   **Type Safety:**  TypeScript definitions ensure type safety and improve developer experience.
-*   **Layered API:**  Provides both high-level and low-level APIs for flexibility and control. 
+*   **Layered API:**  Provides both high-level and low-level APIs for flexibility and control.
+
+
 
 ## Getting Started
 
