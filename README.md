@@ -11,7 +11,7 @@
 *   **Error Propagation and handling:** Errors are propagated back to the caller and can be caught and handled.
 *   **Cancellation Propagation:** Cancellations signals are sent both in iterables and observables.
 *   **Flexible Transport:**  r-rpc can be adapted to different communication channels by implementing the transport interfaces.
-*   **Type Safety:**  TypeScript definitions ensure type safety and improve developer experience.
+*   **Type Safety:**  Advanced TypeScript types and proxies are used to ensure end to end type safety with great developer experience.
 *   **Layered API:**  Provides both high-level and low-level APIs for flexibility and control.
 
 
