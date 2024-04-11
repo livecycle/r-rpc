@@ -16,7 +16,7 @@
 **Installation:**
 
 ```bash
-npm install r-rpc
+npm install https://github.com/livecycle/r-rpc
 ```
 
 ### Setup - Creating Router and Client
