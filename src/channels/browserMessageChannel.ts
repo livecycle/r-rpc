@@ -49,6 +49,7 @@ export function createPostMessageServer(port?: MessagePort) {
   };
   const onCall: TransportListener = (fn) => {
     sink = fn;
+    return ()=> {}
   };
   const respond: TransportResponder = async (result) => {
     const event = corMap.get(result.correlationId);

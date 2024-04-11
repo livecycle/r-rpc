@@ -28,7 +28,8 @@ export type RemoteResult<T = unknown, TErr extends Error = Error> = RemoteResult
 };
 export type TransportResponder = (call: RemoteResult) => Promise<void>;
 export type TransportInvoker = (call: RemoteCallObject, callback: (r: RemoteResult) => void) => Promise<void>;
-export type TransportListener = (onCall: (call: RemoteCallObject) => void) => void;
+type Teardown = ()=> void;
+export type TransportListener = (onCall: (call: RemoteCallObject) => void) => Teardown;
 
 export const FunctionRef$ = "__FunctionRef$";
 export const FunctionRefType$ = "__FunctionRefType$";
