@@ -185,18 +185,22 @@ channel.port2.start();
 
 ### Implementing a Channel
 
-To implement a custom channel, you need to provide two key components:
+To implement a custom channel, you need to provide three key components:
 
-*   **Transport Listener:**  This component listens for incoming RPC requests on the server-side and passes them to the r-rpc router.
+*   **Transport Listener:** This component listens for incoming RPC requests on the server-side and passes them to the r-rpc router.
 *   **Transport Invoker:** This component is responsible for sending RPC requests from the client-side and receiving responses from the server. 
+*   **Transport Responder:** This component sends responses back to the client from the server-side based on the results of the RPC calls.
 
-These components should adhere to the `TransportListener` and `TransportInvoker` interfaces defined in the `r-rpc` library.
+These components should adhere to the `TransportListener`, `TransportInvoker`, and `TransportResponder` interfaces defined in the `r-rpc` library.
 
 **Interfaces:**
 
 ```typescript
 // TransportListener (Server-side)
 type TransportListener = (onCall: (call: RemoteCallObject) => void) => void;
+
+// TransportResponder (Server-side)
+type TransportResponder = (call: RemoteResult) => Promise<void>;
 
 // TransportInvoker (Client-side) 
 type TransportInvoker = (call: RemoteCallObject, callback: (r: RemoteResult) => void) => Promise<void>; 
@@ -208,33 +212,64 @@ type TransportInvoker = (call: RemoteCallObject, callback: (r: RemoteResult) => 
 // Server-side (TransportListener)
 import { WebSocketServer } from 'ws'; 
 
-function createWebSocketListener(wss: WebSocketServer): TransportListener {
+import { createRouter } from 'r-rpc';
+import WebSocket from 'ws'; // Replace with your WebSocket library
+
+const wss = new WebSocket.Server({ port: 8080 }); 
+
+function createWebSocketListener(ws: WebSocket): TransportListener { 
   return (onCall) => {
-    wss.on('connection', (ws) => {
-      ws.on('message', (message) => {
-        const call = JSON.parse(message.toString()) as RemoteCallObject; 
-        onCall(call);
-      });
-    }); 
+    ws.on('message', (message) => {
+      const call = JSON.parse(message.toString()) as RemoteCallObject;
+      onCall(call);
+    });
+  };
+}
+
+function createWebSocketResponder(ws: WebSocket): TransportResponder { 
+  return async (result) => {
+    ws.send(JSON.stringify(result));
   }; 
 }
+
+wss.on('connection', (ws) => {
+  const onCall = createWebSocketListener(ws);
+  const respond = createWebSocketResponder(ws);
+  const router = createRouter(onCall, respond); 
+  // ... register services 
+  router.bind();
+});
 
 // Client-side (TransportInvoker)
-import { WebSocket } from 'ws';
+import { createClient } from 'r-rpc';
+
+const ws = new WebSocket('ws://localhost:8080');
 
 function createWebSocketInvoker(ws: WebSocket): TransportInvoker {
+  const corMap = new Map<string, (r: RemoteResult) => void>();
+
+  // Register the message handler only once
+  ws.on('message', (message) => { 
+    const result = JSON.parse(message.toString()) as RemoteResult;
+    const callback = corMap.get(result.correlationId);
+    callback?.(result);
+    if (result.type === 'error' || result.done) {
+      corMap.delete(result.correlationId);
+    }
+  }); 
+
   return (call, callback) => {
-    return new Promise((resolve, reject) => { 
-      ws.send(JSON.stringify(call));
-      ws.on('message', (message) => {
-        const result = JSON.parse(message.toString()) as RemoteResult;
-        callback(result);
-        resolve();
-      }); 
-      ws.on('error', reject); 
+    return new Promise((resolve, reject) => {
+      corMap.set(call.correlationId, callback); 
+      ws.send(JSON.stringify(call)); 
+      ws.on('error', reject);  
     });
-  }; 
+  };
 }
+
+const invoker = createWebSocketInvoker(ws);
+const client = createClient(invoker);
+// ... use the client
 ```
 
 **By implementing custom channels, you can adapt r-rpc to any communication technology that suits your application's requirements.** 
