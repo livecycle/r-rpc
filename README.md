@@ -129,6 +129,61 @@ r-rpc separates the concerns of transport, routing, and service definition.
 *   **Client:** The client provides methods for invoking remote functions, generators, and observables. 
 *   **Proxy (Client):** A high-level abstraction for interacting with services as if they were local objects.
 
+## Transport Examples
+
+### 1. In-Memory Channel (memoryChannel)
+
+This transport is useful for testing or when both the client and server reside within the same process.
+
+```typescript
+import { createRouter, createClient } from 'r-rpc';
+import { createMemoryChannel } from 'r-rpc'
+import { EventEmitter } from 'events';
+
+const { onCall, respond } = createMemoryChannel(e1, e2);
+
+const router = createRouter(onCall, respond);
+router.bind();
+// ... register services
+
+const e1 = new EventEmitter();
+const e2 = new EventEmitter();
+const { send } = createMemoryChannel(e2, e1);
+
+const client = createClient(send);
+// ... use the client
+```
+
+### 2. Browser Message Channel (browserMessageChannel)
+
+This transport is designed for communication between different browser windows, tabs, or iframes using the `postMessage` API.
+
+**Server (Parent Window):**
+
+```typescript
+import { createPostMessageServer } from 'r-rpc';
+
+const { router, handler } = createPostMessageServer();
+// ... register services
+router.bind();
+
+window.addEventListener('message', handler); 
+```
+
+**Client (Child Window):**
+
+```typescript
+import { createPostMessageClient } from 'r-rpc';
+
+const channel = new MessageChannel();
+const { client, handler } = createPostMessageClient('myClient', window.parent, channel.port1);
+
+window.addEventListener('message', handler);
+channel.port2.start();
+// ... use the client
+```
+
+
 ## Early Stage Notice
 
 While r-rpc is used in a real production application, it is still under development and may have limitations or undergo changes. Feedback and contributions are welcome!
