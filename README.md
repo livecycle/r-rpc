@@ -183,6 +183,62 @@ channel.port2.start();
 // ... use the client
 ```
 
+### Implementing a Channel
+
+To implement a custom channel, you need to provide two key components:
+
+*   **Transport Listener:**  This component listens for incoming RPC requests on the server-side and passes them to the r-rpc router.
+*   **Transport Invoker:** This component is responsible for sending RPC requests from the client-side and receiving responses from the server. 
+
+These components should adhere to the `TransportListener` and `TransportInvoker` interfaces defined in the `r-rpc` library.
+
+**Interfaces:**
+
+```typescript
+// TransportListener (Server-side)
+type TransportListener = (onCall: (call: RemoteCallObject) => void) => void;
+
+// TransportInvoker (Client-side) 
+type TransportInvoker = (call: RemoteCallObject, callback: (r: RemoteResult) => void) => Promise<void>; 
+``` 
+
+**Example: Implementing a WebSocket Channel**
+
+```typescript
+// Server-side (TransportListener)
+import { WebSocketServer } from 'ws'; 
+
+function createWebSocketListener(wss: WebSocketServer): TransportListener {
+  return (onCall) => {
+    wss.on('connection', (ws) => {
+      ws.on('message', (message) => {
+        const call = JSON.parse(message.toString()) as RemoteCallObject; 
+        onCall(call);
+      });
+    }); 
+  }; 
+}
+
+// Client-side (TransportInvoker)
+import { WebSocket } from 'ws';
+
+function createWebSocketInvoker(ws: WebSocket): TransportInvoker {
+  return (call, callback) => {
+    return new Promise((resolve, reject) => { 
+      ws.send(JSON.stringify(call));
+      ws.on('message', (message) => {
+        const result = JSON.parse(message.toString()) as RemoteResult;
+        callback(result);
+        resolve();
+      }); 
+      ws.on('error', reject); 
+    });
+  }; 
+}
+```
+
+**By implementing custom channels, you can adapt r-rpc to any communication technology that suits your application's requirements.** 
+
 
 ## Early Stage Notice
 
