@@ -9,7 +9,7 @@
 *   **Observables:** Subscribe to remote observables and react to emitted values and events.
 *   **Remote Function References (Experimental):** Return functions from remote calls and execute them on the server.
 *   **Error Propagation and handling:** Errors are propagated back to the caller and can be caught and handled.
-*   **Cancellation Propagation:** Cancellations signals are sent both in iterables and observables.
+*   **Cancellation Propagation:** Cancellations signals are sent both in generators and observables.
 *   **Flexible Transport:**  r-rpc can be adapted to different communication channels by implementing the transport interfaces.
 *   **Type Safety:**  Advanced TypeScript types and proxies are used to ensure end to end type safety with great developer experience.
 *   **Layered API:**  Provides both high-level and low-level APIs for flexibility and control.
