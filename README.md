@@ -278,6 +278,66 @@ const client = createClient(invoker);
 
 **By implementing custom channels, you can adapt r-rpc to any communication technology that suits your application's requirements.** 
 
+## Experimental Feature: Remote Function References
+
+r-rpc is experimenting with a new feature that allows you to return function references from remote procedure calls. This means that you can now pass functions as return values, enabling more complex and dynamic interactions between client and server. 
+
+**Function references can be returned directly, as well as nested within objects or arrays. You can also have functions that return other functions, creating chains of remote function calls.**
+
+**Here's how it works:**
+
+1. **Server-Side (Encoding):** When a function is returned from a remote procedure on the server, r-rpc encodes it into a special reference object. This object contains a unique identifier for the function and information about its expected behavior (e.g., whether it returns a promise). 
+
+2. **Client-Side (Decoding and Execution):** The client receives the reference object and uses it to create a local proxy function. This proxy function, when called, sends a request to the server to execute the actual remote function with the provided arguments. The result from the server is then returned to the client.
+
+**Example:**
+
+```typescript
+// Server-side
+router.addRoute('createCounter', () => {
+  let count = 0;
+  return () => ++count; // Returns a function
+});
+
+// Client-side
+const counterFn = await client.functionRef('createCounter')(); // Get the remote function
+const result1 = await counterFn(); // Call the remote function (returns 1)
+const result2 = await counterFn(); // Call again (returns 2)
+```
+
+In this example, the `createCounter` function on the server returns a function that increments a counter. The client obtains a reference to this remote function and can call it multiple times, each time incrementing the counter on the server and receiving the updated value.
+
+**Benefits:**
+
+*   **Dynamic Behavior:** You can create more dynamic and interactive applications by passing functions that encapsulate behavior or logic.
+*   **Code Reusability:** Share and reuse functions between client and server, promoting modularity and reducing code duplication.
+*   **State Management:**  Functions can maintain state on the server, allowing for stateful interactions without directly exposing the state itself. 
+
+**Considerations and Limitations:**
+
+*   **Closures:** Closures are currently kept alive on the server as long as the client holds a reference to the function. 
+*   **Garbage Collection:** Unused function references on the client need to be garbage collected properly to avoid memory leaks and release server-side resources. r-rpc uses a `FinalizationRegistry` to track and clean up references when they are no longer used.
+*   **No support for iterators/observables at this point:** The current implementation does not support returning a function that return iterators or observables as function references. This may change in future versions. 
+
+
+**API and Middleware:**
+
+*   **\`routerFunctionRefMiddleware\`:** Apply this middleware to your router on the server-side to enable encoding of returned functions.
+*   **\`clientFunctionRefMiddleware\`:** Apply this middleware to your client on the client-side to enable decoding and execution of remote function references.
+
+**Enablement:**
+
+```typescript
+// Server
+const router = routerFunctionRefMiddleware(createRouter()); 
+// ... add routes
+
+// Client 
+const client = clientFunctionRefMiddleware(createClient(transportInvoker)); 
+// ... use the client
+```
+
+**This experimental feature opens up new possibilities for building more sophisticated and interactive RPC applications. As it evolves, expect improvements in type safety, serialization capabilities, and overall developer experience.**
 
 ## Early Stage Notice
 
@@ -285,4 +345,4 @@ While r-rpc is used in a real production application, it is still under developm
 
 ## License
 
-[MIT](LICENSE);
+[MIT](LICENSE)
