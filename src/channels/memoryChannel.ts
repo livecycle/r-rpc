@@ -3,9 +3,12 @@ import { RemoteCallObject, RemoteResult, TransportInvoker, TransportListener, Tr
 
 export function createMemoryChannel(input: EventEmitter, output: EventEmitter) {
   const onCall: TransportListener = (fn) => {
-    input.on('request', (data) => {
+    const handler = (data: string) => {
       fn(JSON.parse(data) as RemoteCallObject);
-    });
+    }
+    input.on('request',handler);
+
+    return ()=> input.off('request', handler)
   };
 
   const respond: TransportResponder = async (result) => {
