@@ -135,5 +135,4 @@ While r-rpc is used in a real production application, it is still under developm
 
 ## License
 
-[MIT](LICENSE)
-`;
+[MIT](LICENSE);
