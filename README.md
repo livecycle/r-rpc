@@ -5,7 +5,7 @@
 ## Features
 
 *   **Function Calls:** Invoke remote functions with arguments and receive their return values.
-*   **Generators:** Execute remote generators and iterate over the yielded values (no support for sending data bi-directionally with next()). 
+*   **Generators:** Execute remote generators (sync/async) and iterate over the yielded values (no support for sending data bi-directionally with next()). 
 *   **Observables:** Subscribe to remote observables and react to emitted values and events.
 *   **Flexible Transport:**  r-rpc can be adapted to different communication channels by implementing the transport interfaces.
 *   **Type Safety:**  TypeScript definitions ensure type safety and improve developer experience.
@@ -51,23 +51,23 @@ import { registerService } from 'r-rpc';
 import { Observable } from 'rxjs';
 
 const service = {
-  sum(a: number, b: number): number {
+  sum(a: number, b: number) {
     return a + b;
   },
-  concat(a: string, b: string): string {
+  concat(a: string, b: string) {
     return a + b; 
   },
-  *numbers(max): Iterable<number> {
+  *numbers(max) {
     let i = 0;
     while(i < max) {
       yield i++;
     }
   },
-  async delayedSum(a: number, b: number): Promise<number> {
+  async delayedSum(a: number, b: number) {
     await new Promise((r) => setTimeout(r, 100)); // Simulate delay
     return a + b;
   }, 
-  events(initialValue: number): Observable<number> {
+  events(initialValue: number) {
     return new Observable((observer) => {
       let i = initialValue;
       const interval = setInterval(() => {
