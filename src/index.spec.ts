@@ -291,7 +291,7 @@ describe('rpc tests', () => {
       };
       registerService(router, 'test', service2);
       const proxy = createProxy<typeof service2>(client, 'test');
-      const data = [];
+      const data = [] as number[];
       for await (const n of proxy.iter$Iter(2)) {
         data.push(n);
       }
