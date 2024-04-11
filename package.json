@@ -7,7 +7,7 @@
     "type": "module",
     "scripts": {
       "build": "tsc",
-      "test": "jest",
+      "test": "node --expose-gc ./node_modules/.bin/jest",
       "lint": "eslint .",
       "prepublishOnly": "npm run build"
     },

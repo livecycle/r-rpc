@@ -37,6 +37,18 @@ export type ProxyType<T, deep = true> = T extends (...args: any[]) => infer R
     : Promise<T>
   : Promise<T>;
 
+export function funcProxy<T extends (...args:unknown[])=> unknown>(client: RpcClient, address: string, returnType: 'promise' | 'gen' | 'observable' = 'promise') {
+  return ((...args:unknown[])=>{
+    if (returnType === 'promise') {
+      return client.functionRef(address)(...args);
+    } else if (returnType === 'observable') {
+      return client.functionObservableRef(address)(...args);
+    }
+    return client.functionGenRef(address)(...args);
+  }) as ProxyType<T, false>;
+}
+
+
 export function createProxy<T>(
   client: RpcClient,
   address: string,
@@ -44,12 +56,7 @@ export function createProxy<T>(
 ): ProxyType<T> {
   return new Proxy(function () {}, {
     apply(_, __, args) {
-      if (returnType === 'promise') {
-        return client.functionRef(address)(...args);
-      } else if (returnType === 'observable') {
-        return client.functionObservableRef(address)(...args);
-      }
-      return client.functionGenRef(address)(...args);
+      return funcProxy(client, address, returnType)(...args);
     },
     get(_: any, prop: string) {
       if (prop === 'then') {

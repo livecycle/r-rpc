@@ -1,4 +1,5 @@
 import { from, isObservable, of } from 'rxjs';
+import { routerTrieSymbol } from './contracts.js';
 import { convertToAsyncIterable } from './utils/async-it.js';
 import Trie from './utils/trie.js';
 function isPromiseLike(value) {
@@ -15,7 +16,7 @@ function convertToObservable(value) {
         return of(value);
     }
 }
-export function createRouter(listener, responder) {
+export function createRouter() {
     const routeTree = new Trie();
     const executors = new Map();
     function createHandler(fn) {
@@ -100,17 +101,20 @@ export function createRouter(listener, responder) {
             });
         };
     }
-    return {
+    const router = {
         addPrefixRoute(address, fnByPrefix) {
             routeTree.set(address, (call, cb) => {
                 const fn = fnByPrefix(call.address);
                 return createHandler(fn)(call, cb);
             }, true);
         },
+        removeRoute(address) {
+            routeTree.delete(address);
+        },
         addRoute(address, fn) {
             routeTree.set(address, createHandler(fn));
         },
-        bind() {
+        bind(listener, responder) {
             return listener(async (call) => {
                 if (call.type === 'cancel') {
                     const ex = executors.get(call.correlationId);
@@ -136,6 +140,8 @@ export function createRouter(listener, responder) {
             });
         },
     };
+    Object.assign(router, { [routerTrieSymbol]: routeTree }); // for testing
+    return router;
 }
 export function registerService(router, address, service) {
     router.addPrefixRoute(address, (callAddress) => {

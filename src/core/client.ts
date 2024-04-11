@@ -1,11 +1,8 @@
 import { lastValueFrom, Observable } from 'rxjs';
-import { RemoteCall, RemoteResult, TransportInvoker } from './contracts.js';
+import type { RemoteCall, RemoteResult, TransportInvoker } from './contracts.js';
+import { IDGen } from './utils/id.js';
 
-const ID = function () {
-  return Math.random().toString(36).substring(2, 9);
-};
-
-export function createClient(invoker: TransportInvoker, idGen: () => string = ID) {
+export function createClient(invoker: TransportInvoker, idGen: () => string = IDGen) {
   async function* exec<T>(call: RemoteCall) {
     let isFinished = false;
     try {
@@ -94,7 +91,7 @@ export function createClient(invoker: TransportInvoker, idGen: () => string = ID
     },
     functionObservableRef<T extends (...args: any[]) => any>(address: string) {
       return (...args: Parameters<T>) => {
-        type returnType = ReturnType<T>;
+        type returnType = ReturnType<T> extends Observable<infer U> ? U : never;
         const observable = execObservable<returnType>(() => ({
           correlationId: idGen(),
           address,

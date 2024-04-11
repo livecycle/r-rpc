@@ -3,7 +3,7 @@ export type TrieNode = { [key: string]: TrieNode };
 export default class TrieWithPrefix<TValue> {
   constructor(
     private readonly _splitKey = (key: string) => key.split('/'),
-    _joinKey = (fragments: []) => fragments.join('/')
+    private readonly _joinKey = (fragments: string[]) => fragments.join('/')
   ) {}
 
   private readonly _root: TrieNode = {};
@@ -19,6 +19,51 @@ export default class TrieWithPrefix<TValue> {
       node = node[next]!;
     }
     this._valueMap.set(node, { value, wildcard });
+  }
+
+  delete(key: string) {
+    const fragments = this._splitKey(key);
+    let node: TrieNode | undefined = this._root;
+    for (const next of fragments) {
+      const nextNode: TrieNode | undefined = node![next];
+      if (!nextNode) {
+        break;
+      } else {
+        node = nextNode;
+      }
+    }
+    if (node) {
+      this._valueMap.delete(node);
+    }
+  }
+
+
+
+  list(prefix: string = ""){
+    const fragments = this._splitKey(prefix);
+    let node: TrieNode | undefined = this._root;
+    for (const next of fragments) {
+      const nextNode: TrieNode | undefined = node![next];
+      if (!nextNode) {
+        return [];
+      } else {
+        node = nextNode;
+      }
+    }
+    const result: string[] = [];
+    const stack: [string, TrieNode][] = [[prefix, node]];
+    while (stack.length > 0) {
+      const [currentAddress, currentNode] = stack.shift()!;
+      if (this._valueMap.has(currentNode)) {
+        result.push(currentAddress);
+      }
+      for (const key in currentNode) {
+        const nextNode = currentNode[key]!;
+        const nextAddress = this._joinKey([currentAddress, key]);
+        stack.push([nextAddress, nextNode]);
+      }
+    }
+    return result
   }
 
   get(key: string): TValue | undefined {

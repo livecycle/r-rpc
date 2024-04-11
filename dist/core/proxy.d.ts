@@ -6,6 +6,7 @@ export type ProxyType<T, deep = true> = T extends (...args: any[]) => infer R ? 
 } ? deep extends true ? {
     [K in keyof T as T[K] extends (...args: infer _1) => unknown ? ReturnType<ProxyType<T[K]>> extends AsyncIterable<unknown> ? `${K & string}${typeof $iter}` : ReturnType<ProxyType<T[K]>> extends AsyncGenerator<unknown> ? `${K & string}${typeof $iter}` : ReturnType<ProxyType<T[K]>> extends Observable<unknown> ? `${K & string}$` : K : K]: ProxyType<T[K]>;
 } : Promise<T> : Promise<T>;
+export declare function funcProxy<T extends (...args: unknown[]) => unknown>(client: RpcClient, address: string, returnType?: 'promise' | 'gen' | 'observable'): ProxyType<T, false>;
 export declare function createProxy<T>(client: RpcClient, address: string, returnType?: 'promise' | 'gen' | 'observable'): ProxyType<T>;
 export {};
 //# sourceMappingURL=proxy.d.ts.map

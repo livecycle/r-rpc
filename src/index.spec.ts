@@ -5,19 +5,20 @@ import { createClient, createProxy, createRouter, registerService } from './core
 
 describe('rpc tests', () => {
   let router: ReturnType<typeof createRouter>;
-  let client: ReturnType<typeof createClient>;
+  let client: ReturnType<typeof createClient>
+  let server: ReturnType<typeof createMemoryChannel>;
 
   beforeEach(() => {
     const e1 = new EventEmitter();
     const e2 = new EventEmitter();
-    const server = createMemoryChannel(e1, e2);
+    server = createMemoryChannel(e1, e2);
     const sender = createMemoryChannel(e2, e1);
-    router = createRouter(server.onCall, server.respond);
+    router = createRouter();
     client = createClient(sender.send);
-    router.bind();
   });
 
   describe('simple routing', () => {
+    beforeEach(()=> router.bind(server.onCall, server.respond))
     it('should call function and return result', async () => {
       const fn = (a: number, b: number) => a + b;
       router.addRoute('test', fn);
@@ -99,6 +100,21 @@ describe('rpc tests', () => {
       fail("error wasn't caught");
     });
 
+    it('should pass errors', async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const fn = async (a: number, b: number) => {
+        throw 'hello';
+      };
+      router.addRoute('test', fn);
+      try {
+        await client.functionRef<typeof fn>('test')(3, 4);
+      } catch (ex) {
+        expect(ex).toBe('hello');
+        return;
+      }
+      fail("error wasn't caught");
+    });
+
     it('should run iterables', async () => {
       const fn = function* (a: number, b: number) {
         yield a * 2;
@@ -153,7 +169,7 @@ describe('rpc tests', () => {
 
     it('should run observable', async () => {
       const fn = (a: number, b: number) => {
-        return new Observable((obs) => {
+        return new Observable<number>((obs) => {
           obs.next(a);
           obs.next(b);
           obs.next(a + b);
@@ -164,57 +180,59 @@ describe('rpc tests', () => {
       const obs = client.functionObservableRef<typeof fn>('test')(3, 4);
       expect(await obs.pipe(toArray()).toPromise()).toEqual([3, 4, 7]);
     });
+    it('should run propogate error from observable', async () => {
+      const fn = () => {
+        return new Observable((obs) => {
+          obs.error('err');
+          obs.complete();
+        });
+      };
+      router.addRoute('test', fn);
+      const obs = client.functionObservableRef<typeof fn>('test')();
+      try {
+        await obs.pipe(toArray()).toPromise();
+      } catch (ex) {
+        expect(ex).toBe('err');
+        return;
+      }
+    });
+
+    it('should cancel observable', async () => {
+      let breakCalled = false;
+      const fn = (a: number, b: number) => {
+        return new Observable((obs) => {
+          return () => {
+            breakCalled = true;
+          };
+        });
+      };
+      router.addRoute('test', fn);
+      const obs = client.functionObservableRef<typeof fn>('test')(3, 4);
+      obs.subscribe().unsubscribe();
+      expect(breakCalled).toEqual(true);
+    });
+
+    it('should be able to resubscribe to observable', async () => {
+      const fn = (a: number, b: number) => {
+        return new Observable((obs) => {
+          obs.next(a);
+          obs.next(b);
+          obs.next(a + b);
+          obs.complete();
+        });
+      };
+      router.addRoute('test', fn);
+      const obs = client.functionObservableRef<typeof fn>('test')(3, 4);
+      expect(await obs.pipe(toArray()).toPromise()).toEqual([3, 4, 7]);
+      //another run
+      expect(await obs.pipe(toArray()).toPromise()).toEqual([3, 4, 7]);
+    });
+
   });
 
-  it('should run propogate error from observable', async () => {
-    const fn = () => {
-      return new Observable((obs) => {
-        obs.error('err');
-        obs.complete();
-      });
-    };
-    router.addRoute('test', fn);
-    const obs = client.functionObservableRef<typeof fn>('test')();
-    try {
-      await obs.pipe(toArray()).toPromise();
-    } catch (ex) {
-      expect(ex).toBe('err');
-      return;
-    }
-  });
-
-  it('should cancel observable', async () => {
-    let breakCalled = false;
-    const fn = (a: number, b: number) => {
-      return new Observable((obs) => {
-        return () => {
-          breakCalled = true;
-        };
-      });
-    };
-    router.addRoute('test', fn);
-    const obs = client.functionObservableRef<typeof fn>('test')(3, 4);
-    obs.subscribe().unsubscribe();
-    expect(breakCalled).toEqual(true);
-  });
-
-  it('should be able to resubscribe to observable', async () => {
-    const fn = (a: number, b: number) => {
-      return new Observable((obs) => {
-        obs.next(a);
-        obs.next(b);
-        obs.next(a + b);
-        obs.complete();
-      });
-    };
-    router.addRoute('test', fn);
-    const obs = client.functionObservableRef<typeof fn>('test')(3, 4);
-    expect(await obs.pipe(toArray()).toPromise()).toEqual([3, 4, 7]);
-    //another run
-    expect(await obs.pipe(toArray()).toPromise()).toEqual([3, 4, 7]);
-  });
 
   describe('service based routed', () => {
+    beforeEach(()=> router.bind(server.onCall, server.respond))
     const service = {
       sum(a: number, b: number): number {
         return a + b;
@@ -365,4 +383,4 @@ describe('rpc tests', () => {
       expect(cancelled).toEqual(true);
     });
   });
-});
+})

@@ -85,6 +85,7 @@ export function createPostMessageServer(port?: MessagePort) {
         sink(e.data.remoteCall);
       }
     },
-    router: createRouter(onCall, respond),
+    onCall,
+    respond,
   };
 }

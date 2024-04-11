@@ -8,6 +8,7 @@
 *   **Generators:** Execute remote generators (sync/async) and iterate over the yielded values (no support for sending data bi-directionally with next()). 
 *   **Observables:** Subscribe to remote observables and react to emitted values and events.
 *   **Error Propagation and handling:** Errors are propagated back to the caller and can be caught and handled.
+*   **Cancellation Propagation:** Cancellations signals are sent both in iterables and observables.
 *   **Flexible Transport:**  r-rpc can be adapted to different communication channels by implementing the transport interfaces.
 *   **Type Safety:**  TypeScript definitions ensure type safety and improve developer experience.
 *   **Layered API:**  Provides both high-level and low-level APIs for flexibility and control.
@@ -30,8 +31,8 @@ npm install https://github.com/livecycle/r-rpc
 import { createRouter } from 'r-rpc';
 
 // Replace with your actual transport listener and responder
-const router = createRouter(/* transport listener */, /* transport responder */); 
-router.bind(); // Start listening for requests
+const router = createRouter(); 
+router.bind(/* transport listener */, /* transport responder */); // Start listening for requests
 ```
 
 **Client:**
@@ -145,8 +146,8 @@ import { EventEmitter } from 'events';
 
 const { onCall, respond } = createMemoryChannel(e1, e2);
 
-const router = createRouter(onCall, respond);
-router.bind();
+const router = createRouter();
+router.bind(onCall, respond);
 // ... register services
 
 const e1 = new EventEmitter();
@@ -166,9 +167,9 @@ This transport is designed for communication between different browser windows, 
 ```typescript
 import { createPostMessageServer } from 'r-rpc';
 
-const { router, handler } = createPostMessageServer();
+const { router, handler, onCall, respond  } = createPostMessageServer();
 // ... register services
-router.bind();
+router.bind(onCall, respond);
 
 window.addEventListener('message', handler); 
 ```
@@ -238,9 +239,9 @@ function createWebSocketResponder(ws: WebSocket): TransportResponder {
 wss.on('connection', (ws) => {
   const onCall = createWebSocketListener(ws);
   const respond = createWebSocketResponder(ws);
-  const router = createRouter(onCall, respond); 
+  const router = createRouter(); 
   // ... register services 
-  router.bind();
+  router.bind(onCall, respond);
 });
 
 // Client-side (TransportInvoker)

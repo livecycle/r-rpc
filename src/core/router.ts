@@ -1,5 +1,5 @@
 import { from, isObservable, Observable, of } from 'rxjs';
-import { RemoteCall, RemoteCallObject, RemoteResult, TransportListener, TransportResponder } from './contracts.js';
+import { RemoteCall, RemoteCallObject, RemoteResult, routerTrieSymbol, TransportListener, TransportResponder } from './contracts.js';
 import { convertToAsyncIterable } from './utils/async-it.js';
 import Trie from './utils/trie.js';
 
@@ -17,7 +17,7 @@ function convertToObservable<T>(value: PromiseLike<T> | T | Observable<T>): Obse
   }
 }
 
-export function createRouter(listener: TransportListener, responder: TransportResponder) {
+export function createRouter() {
   const routeTree = new Trie<(call: RemoteCall, cb: (r: RemoteResult) => void) => void>();
   const executors = new Map<
     string,
@@ -112,7 +112,7 @@ export function createRouter(listener: TransportListener, responder: TransportRe
     };
   }
 
-  return {
+  const router = {
     addPrefixRoute<TArgs extends unknown[], TReturn>(
       address: string,
       fnByPrefix: (
@@ -128,13 +128,16 @@ export function createRouter(listener: TransportListener, responder: TransportRe
         true
       );
     },
+    removeRoute(address: string) {
+      routeTree.delete(address);
+    },
     addRoute<TArgs extends unknown[], TReturn>(
       address: string,
       fn: (...args: TArgs) => AsyncIterable<TReturn> | Iterable<TReturn> | TReturn | PromiseLike<TReturn>
     ) {
       routeTree.set(address, createHandler(fn));
     },
-    bind() {
+    bind(listener: TransportListener, responder: TransportResponder) {
       return listener(async (call: RemoteCallObject) => {
         if (call.type === 'cancel') {
           const ex = executors.get(call.correlationId);
@@ -162,6 +165,8 @@ export function createRouter(listener: TransportListener, responder: TransportRe
       });
     },
   };
+  Object.assign(router, {[routerTrieSymbol]:routeTree}) // for testing
+  return router
 }
 
 export function registerService<TService>(router: RpcRouter, address: string, service: TService) {
@@ -193,4 +198,4 @@ export function registerService<TService>(router: RpcRouter, address: string, se
   });
 }
 
-export type RpcRouter = ReturnType<typeof createRouter>;
+export type RpcRouter = Omit<ReturnType<typeof createRouter>, typeof routerTrieSymbol>;

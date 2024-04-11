@@ -1,4 +1,4 @@
-import { createClient, createRouter, } from '../index.js';
+import { createClient, } from '../index.js';
 export function createPostMessageClient(clientId, target, outgoingPort) {
     const corMap = new Map();
     let sentOngoingPort = false;
@@ -75,6 +75,7 @@ export function createPostMessageServer(port) {
                 sink(e.data.remoteCall);
             }
         },
-        router: createRouter(onCall, respond),
+        onCall,
+        respond,
     };
 }

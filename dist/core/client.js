@@ -1,8 +1,6 @@
 import { lastValueFrom, Observable } from 'rxjs';
-const ID = function () {
-    return Math.random().toString(36).substring(2, 9);
-};
-export function createClient(invoker, idGen = ID) {
+import { IDGen } from './utils/id.js';
+export function createClient(invoker, idGen = IDGen) {
     async function* exec(call) {
         let isFinished = false;
         try {

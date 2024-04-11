@@ -1,14 +1,19 @@
 const $iter = '$Iter';
+export function funcProxy(client, address, returnType = 'promise') {
+    return ((...args) => {
+        if (returnType === 'promise') {
+            return client.functionRef(address)(...args);
+        }
+        else if (returnType === 'observable') {
+            return client.functionObservableRef(address)(...args);
+        }
+        return client.functionGenRef(address)(...args);
+    });
+}
 export function createProxy(client, address, returnType = 'promise') {
     return new Proxy(function () { }, {
         apply(_, __, args) {
-            if (returnType === 'promise') {
-                return client.functionRef(address)(...args);
-            }
-            else if (returnType === 'observable') {
-                return client.functionObservableRef(address)(...args);
-            }
-            return client.functionGenRef(address)(...args);
+            return funcProxy(client, address, returnType)(...args);
         },
         get(_, prop) {
             if (prop === 'then') {

@@ -29,3 +29,15 @@ export type RemoteResult<T = unknown, TErr extends Error = Error> = RemoteResult
 export type TransportResponder = (call: RemoteResult) => Promise<void>;
 export type TransportInvoker = (call: RemoteCallObject, callback: (r: RemoteResult) => void) => Promise<void>;
 export type TransportListener = (onCall: (call: RemoteCallObject) => void) => void;
+
+export const FunctionRef$ = "__FunctionRef$";
+export const FunctionRefType$ = "__FunctionRefType$";
+export type FunctionRefType$ = "observable" | "gen" | "promise";
+
+export type FunctionRef$<T> = T extends (...args:unknown[])=> unknown ? T & {
+  [FunctionRef$]: string;
+  [FunctionRefType$]: FunctionRefType$;
+} : never
+
+export const routerTrieSymbol = Symbol('routerTrie') 
+
