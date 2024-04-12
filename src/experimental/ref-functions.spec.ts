@@ -4,6 +4,7 @@ import EventEmitter from "node:events";
 import {
   routerFunctionRefMiddleware,
   clientFunctionRefMiddleware,
+  release,
 } from "./ref-functions.js";
 import { listRoutes } from "../core/utils/debug.js";
 
@@ -82,6 +83,20 @@ describe("experimental - ref functions", () => {
     const counterSlow = await counterGenerator(2);
     const counterFast = await counterGenerator(5);
     expect(await Promise.all([counterFast(), counterSlow()])).toEqual([15, 12]);
+  });
+
+  it("should be able to clean routes/closures manually from client", async () => {
+    const createCounter = () => {
+      let count = 0;
+      return () => ++count;
+    };
+
+    router.addRoute("counter", createCounter);
+    const inc = await client.functionRef<typeof createCounter>("counter")();
+    expect(listRoutes(router, "/fns").length).toEqual(1);
+    expect(await inc()).toEqual(1);
+    release(inc)
+    expect(listRoutes(router, "/fns").length).toEqual(0);
   });
 
   it("should be able to clean routes/closures based on client GC", async () => {

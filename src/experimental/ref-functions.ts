@@ -10,13 +10,21 @@ const isRefFunction = <T>(x: unknown): x is FunctionRef$<T> => {
 }
 
 const reviveFunction = (c: RpcClient) => {
-  const registry = new FinalizationRegistry((heldValue:string) => {
-    c.functionRef<(s:string)=>void>('/fn-unregister')(heldValue);
-  });
+  const clean = async (ref: string)=> await c.functionRef<(s:string)=>void>('/fn-unregister')(ref);
+  const registry = new FinalizationRegistry(clean);
   return <T>(x: T): T => {
     if (isRefFunction(x)) {
-        registry.register(x as any, x[FunctionRef$])
-        return funcProxy(withValueReviver(c, reviveFunction(c)), `/fns/${x[FunctionRef$]}`, x[FunctionRefType$]) as T;
+        const ref = x[FunctionRef$];
+        const token = {ref}
+        registry.register(x as any, ref, token)
+        const proxy = funcProxy(withValueReviver(c, reviveFunction(c)), `/fns/${ref}`, x[FunctionRefType$]) as T;
+Object.defineProperty(proxy, cleanSymbol, {
+          value: ()=> {
+            clean(ref);
+            registry.unregister(token);
+          }
+        })
+        return proxy
     }
     if (Array.isArray(x)) {
       return x.map(reviveFunction(c)) as T
@@ -66,6 +74,15 @@ export function withValueReviver(client: RpcClient, revive: <T>(x:T)=> T): RpcCl
 
 export const clientFunctionRefMiddleware = (client: RpcClient) => {
     return withValueReviver(client, reviveFunction(client));
+}
+
+let cleanSymbol = Symbol('clean-function-ref')
+
+export const release = (fnProxy: (...args: unknown[]) => unknown)=>{
+  if (cleanSymbol in fnProxy) {
+    // @ts-ignore
+    return fnProxy[cleanSymbol]();
+  }
 }
 
 export const routerFunctionRefMiddleware = (router: RpcRouter) => {
