@@ -343,6 +343,7 @@ console.log(await counter2.current()); // -1;
 
 *   **Closures:** Closures are currently kept alive on the server as long as the client holds a reference to the function. 
 *   **Garbage Collection:** Unused function references on the client need to be garbage collected properly to avoid memory leaks and release server-side resources. r-rpc uses a `FinalizationRegistry` to track and clean up references when they are no longer used.
+If you're allocating large objects on the server or want more control, you can trigger the cleanup manually by calling `release(fn)` in the client side code.
 *   **No support for iterators/observables at this point:** The current implementation does not support returning a function that return iterators or observables as function references. This may change in future versions. 
 
 **API and Middleware:**
