@@ -285,7 +285,7 @@ r-rpc is experimenting with a new feature that allows you to return function ref
 
 **Here's how it works:**
 
-1. **Server-Side (Encoding):** When a function is returned from a remote procedure on the server, r-rpc encodes it into a special reference object. This object contains a unique identifier for the function and information about its expected behavior (e.g., whether it returns a promise). 
+1. **Server-Side (Encoding):** When a function is returned from a remote procedure on the server, r-rpc encodes it into a special reference object. This object contains a unique identifier for the function.
 
 2. **Client-Side (Decoding and Execution):** The client receives the reference object and uses it to create a local proxy function. This proxy function, when called, sends a request to the server to execute the actual remote function with the provided arguments. The result from the server is then returned to the client.
 
