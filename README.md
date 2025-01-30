@@ -1,75 +1,93 @@
 # r-rpc
 
+[![GitHub license](https://img.shields.io/github/license/livecycle/r-rpc)](https://github.com/livecycle/r-rpc/blob/master/LICENSE)
+[![Project Status: Active](https://img.shields.io/badge/Project%20Status-Active-green.svg)](https://github.com/livecycle/r-rpc)
+
 **r-rpc** is a library for remote procedure calls (RPC) that enables communication between different parts of an application, potentially running in different environments (e.g., browser and server). It supports various communication paradigms, including async functions, generators, and observables.
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Getting Started](#getting-started)
+  - [Basic Setup](#basic-setup)
+  - [High-Level API (Proxies)](#high-level-api---proxies-and-services)
+  - [Low-Level API](#low-level-api---direct-function-calls)
+- [Architecture](#architecture)
+- [Transport Examples](#transport-examples)
+- [Remote Function References](#remote-function-references-experimental)
+- [Project Status](#project-status)
+- [License](#license)
 
 ## Features
 
-*   **Function Calls:** Invoke remote functions with arguments and receive their return values.
-*   **Generators:** Execute remote generators (sync/async) and iterate over the yielded values (no support for sending data bi-directionally with next()). 
-*   **Observables:** Subscribe to remote observables and react to emitted values and events.
-*   **Remote Function References (Experimental):** Return functions from remote calls and execute them on the server.
-*   **Error Propagation and handling:** Errors are propagated back to the caller and can be caught and handled.
-*   **Cancellation Propagation:** Cancellations signals are sent both in generators and observables.
-*   **Flexible Transport:**  r-rpc can be adapted to different communication channels by implementing the transport interfaces.
-*   **Type Safety:**  Advanced TypeScript types and proxies are used to ensure end to end type safety for great developer experience.
-*   **Layered API:**  Provides both high-level and low-level APIs for flexibility and control.
+* **Function Calls:** Invoke remote functions with arguments and receive their return values.
+* **Generators:** Execute remote generators (sync/async) and iterate over the yielded values (no support for sending data bi-directionally with next()). 
+* **Observables:** Subscribe to remote observables and react to emitted values and events.
+* **Remote Function References (Experimental):** Return functions from remote calls and execute them on the server.
+* **Error Propagation and handling:** Errors are propagated back to the caller and can be caught and handled.
+* **Cancellation Propagation:** Cancellations signals are sent both in generators and observables.
+* **Flexible Transport:** r-rpc can be adapted to different communication channels by implementing the transport interfaces.
+* **Type Safety:** Advanced TypeScript types and proxies are used to ensure end to end type safety for great developer experience.
+* **Layered API:** Provides both high-level and low-level APIs for flexibility and control.
+
+## Installation
+
+```bash
+npm install r-rpc
+```
 
 ## Getting Started
 
-**Installation:**
+### Basic Setup
 
-```bash
-npm install https://github.com/livecycle/r-rpc
-```
-
-### Setup - Creating Router and Client
-
-**Server (Router):**
-
+1. **Server (Router) Setup:**
 ```typescript
 import { createRouter } from 'r-rpc';
 
-// Replace with your actual transport listener and responder
+// Create and configure router
 const router = createRouter(); 
 router.bind(/* transport listener */, /* transport responder */); // Start listening for requests
 ```
 
-**Client:**
-
+2. **Client Setup:**
 ```typescript
 import { createClient } from 'r-rpc';
 
-// Replace with your actual transport invoker
+// Create and configure client
 const client = createClient(/* transport invoker */);
 ```
 
 ### High-Level API - Proxies and Services
 
-**Server (Service Registration):**
+The high-level API provides a more intuitive way to interact with remote services using TypeScript proxies.
 
-**Example: Service with Multiple Methods and Return Types**
-
+**Server-side Service Registration:**
 ```typescript
 import { registerService } from 'r-rpc';
 import { Observable } from 'rxjs';
 
 const service = {
+  // Regular function
   sum(a: number, b: number) {
     return a + b;
   },
-  concat(a: string, b: string) {
-    return a + b; 
-  },
-  *numbers(max) {
+  
+  // Generator function
+  *numbers(max: number) {
     let i = 0;
     while(i < max) {
       yield i++;
     }
   },
+  
+  // Async function
   async delayedSum(a: number, b: number) {
-    await new Promise((r) => setTimeout(r, 100)); // Simulate delay
+    await new Promise((r) => setTimeout(r, 100));
     return a + b;
-  }, 
+  },
+  
+  // Observable
   events(initialValue: number) {
     return new Observable((observer) => {
       let i = initialValue;
@@ -84,143 +102,127 @@ const service = {
 registerService(router, 'myService', service);
 ```
 
-**Client (Proxy Usage):**
-
+**Client-side Service Usage:**
 ```typescript
 import { createProxy } from 'r-rpc';
 
+// Create typed proxy for the service
 const myServiceProxy = createProxy<typeof service>(client, 'myService');
 
-// Call functions and get results directly
-const sumResult = await myServiceProxy.sum(5, 10); 
-const concatResult = await myServiceProxy.concat('hello', 'world');
+// Regular function call
+const sum = await myServiceProxy.sum(5, 10);
 
-// Iterate over async iterable
+// Generator iteration
 for await (const num of myServiceProxy.numbers$Iter(10)) {
   console.log(num); // 0, 1, 2, ...
 }
 
-// Consume observable
+// Observable subscription
 const subscription = myServiceProxy.events$(10).subscribe(value => {
   console.log(value); // 10, 11, 12, ...
 });
+subscription.unsubscribe();
 
-// Unsubscribe when done
-subscription.unsubscribe(); 
-
-// Call async function
-const delayedSumResult = await myServiceProxy.delayedSum(20, 30);
+// Async function call
+const delayedSum = await myServiceProxy.delayedSum(20, 30);
 ```
 
 ### Low-Level API - Direct Function Calls
 
+The low-level API provides more control over the RPC calls:
+
 ```typescript
 // Client-side:
-type sumFunction = (a: number, b: number) => number
-const sumResult = await client.functionRef<sumFunction>('some-service/sum')(5, 10);
+type SumFunction = (a: number, b: number) => number;
+const sumResult = await client.functionRef<SumFunction>('some-service/sum')(5, 10);
 
 // Server-side:
-router.addRoute('some-service/sum', (a, b) => { a + b});
+router.addRoute('some-service/sum', (a, b) => a + b);
 ```
 
 ## Architecture 
 
-r-rpc separates the concerns of transport, routing, and service definition. 
+r-rpc separates the concerns of transport, routing, and service definition:
 
-*   **Transport:** You provide implementations for sending and receiving messages over a specific communication channel. 
-*   **Router (Server):** The router maps incoming requests to registered functions or services.
-*   **Client:** The client provides methods for invoking remote functions, generators, and observables. 
-*   **Proxy (Client):** A high-level abstraction for interacting with services as if they were local objects.
+* **Transport:** Implementations for sending and receiving messages over specific communication channels. 
+* **Router (Server):** Maps incoming requests to registered functions or services.
+* **Client:** Provides methods for invoking remote functions, generators, and observables. 
+* **Proxy (Client):** High-level abstraction for interacting with services as if they were local objects.
 
 ## Transport Examples
 
-### 1. In-Memory Channel (memoryChannel)
+### 1. In-Memory Channel
 
-This transport is useful for testing or when both the client and server reside within the same process.
+Useful for testing or when both client and server are in the same process:
 
 ```typescript
-import { createRouter, createClient } from 'r-rpc';
-import { createMemoryChannel } from 'r-rpc'
+import { createRouter, createClient, createMemoryChannel } from 'r-rpc';
 import { EventEmitter } from 'events';
-
-const { onCall, respond } = createMemoryChannel(e1, e2);
-
-const router = createRouter();
-router.bind(onCall, respond);
-// ... register services
 
 const e1 = new EventEmitter();
 const e2 = new EventEmitter();
-const { send } = createMemoryChannel(e2, e1);
 
+// Server setup
+const { onCall, respond } = createMemoryChannel(e1, e2);
+const router = createRouter();
+router.bind(onCall, respond);
+
+// Client setup
+const { send } = createMemoryChannel(e2, e1);
 const client = createClient(send);
-// ... use the client
 ```
 
-### 2. Browser Message Channel (browserMessageChannel)
+### 2. Browser Message Channel
 
-This transport is designed for communication between different browser windows, tabs, or iframes using the `postMessage` API.
+For communication between browser windows/iframes:
 
 **Server (Parent Window):**
-
 ```typescript
 import { createPostMessageServer } from 'r-rpc';
 
-const { router, handler, onCall, respond  } = createPostMessageServer();
-// ... register services
+const { router, handler, onCall, respond } = createPostMessageServer();
 router.bind(onCall, respond);
-
 window.addEventListener('message', handler); 
 ```
 
 **Client (Child Window):**
-
 ```typescript
 import { createPostMessageClient } from 'r-rpc';
 
 const channel = new MessageChannel();
-const { client, handler } = createPostMessageClient('myClient', window.parent, channel.port1);
+const { client, handler } = createPostMessageClient(
+  'myClient', 
+  window.parent, 
+  channel.port1
+);
 
 window.addEventListener('message', handler);
 channel.port2.start();
-// ... use the client
 ```
 
-### Implementing a Channel
+### Creating Custom Transport
 
-To implement a custom channel, you need to provide three key components:
-
-*   **Transport Listener:** This component listens for incoming RPC requests on the server-side and passes them to the r-rpc router.
-*   **Transport Invoker:** This component is responsible for sending RPC requests from the client-side and receiving responses from the server. 
-*   **Transport Responder:** This component sends responses back to the client from the server-side based on the results of the RPC calls.
-
-These components should adhere to the `TransportListener`, `TransportInvoker`, and `TransportResponder` interfaces defined in the `r-rpc` library.
-
-**Interfaces:**
+To implement a custom transport channel, provide these components:
 
 ```typescript
-// TransportListener (Server-side)
+// Types for transport implementations
 type TransportListener = (onCall: (call: RemoteCallObject) => void) => void;
-
-// TransportResponder (Server-side)
 type TransportResponder = (call: RemoteResult) => Promise<void>;
+type TransportInvoker = (
+  call: RemoteCallObject, 
+  callback: (r: RemoteResult) => void
+) => Promise<void>; 
+```
 
-// TransportInvoker (Client-side) 
-type TransportInvoker = (call: RemoteCallObject, callback: (r: RemoteResult) => void) => Promise<void>; 
-``` 
-
-**Example: Implementing a WebSocket Channel**
-
+Example WebSocket transport implementation:
 ```typescript
-// Server-side (TransportListener)
-import { WebSocketServer } from 'ws'; 
-
+import { WebSocketServer } from 'ws';
 import { createRouter } from 'r-rpc';
-import WebSocket from 'ws'; // Replace with your WebSocket library
 
-const wss = new WebSocket.Server({ port: 8080 }); 
+// Server-side
+const wss = new WebSocketServer({ port: 8080 });
 
-function createWebSocketListener(ws: WebSocket): TransportListener { 
+function createWebSocketListener(ws: WebSocket): TransportListener {
   return (onCall) => {
     ws.on('message', (message) => {
       const call = JSON.parse(message.toString()) as RemoteCallObject;
@@ -229,145 +231,109 @@ function createWebSocketListener(ws: WebSocket): TransportListener {
   };
 }
 
-function createWebSocketResponder(ws: WebSocket): TransportResponder { 
+function createWebSocketResponder(ws: WebSocket): TransportResponder {
   return async (result) => {
     ws.send(JSON.stringify(result));
-  }; 
+  };
 }
 
 wss.on('connection', (ws) => {
-  const onCall = createWebSocketListener(ws);
-  const respond = createWebSocketResponder(ws);
-  const router = createRouter(); 
-  // ... register services 
-  router.bind(onCall, respond);
+  const router = createRouter();
+  router.bind(
+    createWebSocketListener(ws),
+    createWebSocketResponder(ws)
+  );
 });
 
-// Client-side (TransportInvoker)
-import { createClient } from 'r-rpc';
-
-const ws = new WebSocket('ws://localhost:8080');
-
+// Client-side
 function createWebSocketInvoker(ws: WebSocket): TransportInvoker {
-  const corMap = new Map<string, (r: RemoteResult) => void>();
+  const correlationMap = new Map<string, (r: RemoteResult) => void>();
 
-  // Register the message handler only once
-  ws.on('message', (message) => { 
+  ws.on('message', (message) => {
     const result = JSON.parse(message.toString()) as RemoteResult;
-    const callback = corMap.get(result.correlationId);
+    const callback = correlationMap.get(result.correlationId);
     callback?.(result);
     if (result.type === 'error' || result.done) {
-      corMap.delete(result.correlationId);
+      correlationMap.delete(result.correlationId);
     }
-  }); 
+  });
 
   return (call, callback) => {
     return new Promise((resolve, reject) => {
-      corMap.set(call.correlationId, callback); 
-      ws.send(JSON.stringify(call)); 
-      ws.on('error', reject);  
+      correlationMap.set(call.correlationId, callback);
+      ws.send(JSON.stringify(call));
+      ws.on('error', reject);
     });
   };
 }
 
-const invoker = createWebSocketInvoker(ws);
-const client = createClient(invoker);
-// ... use the client
+const ws = new WebSocket('ws://localhost:8080');
+const client = createClient(createWebSocketInvoker(ws));
 ```
-
-**By implementing custom channels, you can adapt r-rpc to any communication technology that suits your application's requirements.** 
 
 ## Remote Function References (Experimental)
 
-r-rpc is experimenting with a new feature that allows you to return function references from remote procedure calls. This means that you can now pass functions as return values, enabling more complex and dynamic interactions between client and server. 
+r-rpc supports returning function references from remote procedure calls, enabling more complex interactions between client and server.
 
-**Function references can be returned directly, as well as nested within objects or arrays. You can also have functions that return other functions, creating chains of remote function calls.**
+### Overview
 
-**Here's how it works:**
+- Functions can be returned directly or nested within objects/arrays
+- Functions can return other functions (chaining)
+- Server-side closures are maintained
+- Cleanup is handled through garbage collection or manual release
 
-1. **Server-Side (Encoding):** When a function is returned from a remote procedure on the server, r-rpc encodes it into a special reference object. This object contains a unique identifier for the function.
+### Usage
 
-2. **Client-Side (Decoding and Execution):** The client receives the reference object and uses it to create a local proxy function. This proxy function, when called, sends a request to the server to execute the actual remote function with the provided arguments. The result from the server is then returned to the client.
-
-**Example:**
-
-```typescript
-// Server-side
-router.addRoute('createCounter', () => {
-  let count = 0;
-  return () => ++count; // Returns a function
-});
-
-// Client-side
-const counterFn = await client.functionRef('createCounter')(); // Get the remote function
-const result1 = await counterFn(); // Call the remote function (returns 1)
-const result2 = await counterFn(); // Call again (returns 2)
-```
-In this example, the `createCounter` function on the server returns a function that increments a counter. The client obtains a reference to this remote function and can call it multiple times, each time incrementing the counter on the server and receiving the updated value.
-
-We can also use the high-level API with proxies to work with function references more easily:
-
-```typescript
-const counterGen = {
-  createCounter: (start: number)=> {
-      let count = start
-      return {
-          inc: () => ++count,
-          dec: () => --count,
-          current: () => count
-      }
-    }
-};
-
-registerService(router, "counter-gen", counterGen);
-const remoteService = createProxy<typeof counterGen>(client, "counter-gen");
-const counter1 = await remoteService.createCounter(0);
-const counter2 = await remoteService.createCounter(0);
-
-// All methods are correctly typed and converted to async signatures if needed
-await counter1.inc();
-await counter1.inc();
-await counter1.dec();
-await counter2.dec();
-console.log(await counter1.current()); // 1
-console.log(await counter2.current()); // -1;
-```
-
-**Benefits:**
-
-*   **Dynamic Behavior:** You can create more dynamic and interactive applications by passing functions that encapsulate behavior or logic.
-*   **Code Reusability:** Share and reuse functions between client and server, promoting modularity and reducing code duplication.
-*   **State Management:**  Functions can maintain state on the server, allowing for stateful interactions without directly exposing the state itself. 
-
-**Considerations and Limitations:**
-
-*   **Closures:** Closures are currently kept alive on the server as long as the client holds a reference to the function. 
-*   **Garbage Collection:** Unused function references on the client need to be garbage collected properly to avoid memory leaks and release server-side resources. r-rpc uses a `FinalizationRegistry` to track and clean up references when they are no longer used.
-If you're allocating large objects on the server or want more control, you can trigger the cleanup manually by calling `release(fn)` in the client side code.
-*   **No support for iterators/observables at this point:** The current implementation does not support returning a function that return iterators or observables as function references. This may change in future versions. 
-
-**API and Middleware:**
-
-*   **\`routerFunctionRefMiddleware\`:** Apply this middleware to your router on the server-side to enable encoding of returned functions.
-*   **\`clientFunctionRefMiddleware\`:** Apply this middleware to your client on the client-side to enable decoding and execution of remote function references.
-
-**Enablement:**
-
+1. **Enable the Feature:**
 ```typescript
 // Server
-const router = routerFunctionRefMiddleware(createRouter()); 
-// ... add routes
+import { routerFunctionRefMiddleware, createRouter } from 'r-rpc';
+const router = routerFunctionRefMiddleware(createRouter());
 
-// Client 
-const client = clientFunctionRefMiddleware(createClient(transportInvoker)); 
-// ... use the client
+// Client
+import { clientFunctionRefMiddleware, createClient } from 'r-rpc';
+const client = clientFunctionRefMiddleware(createClient(transportInvoker));
 ```
 
-**This experimental feature opens up new possibilities for building more sophisticated and interactive RPC applications. As it evolves, expect improvements in type safety, serialization capabilities, and overall developer experience.**
+2. **Example Usage:**
+```typescript
+// Server-side
+const counterService = {
+  createCounter: (start: number) => {
+    let count = start;
+    return {
+      inc: () => ++count,
+      dec: () => --count,
+      current: () => count
+    };
+  }
+};
 
-## Early Stage Notice
+registerService(router, "counter-service", counterService);
 
-While r-rpc is used in a real production application, it is still under development and may have limitations or undergo changes. Feedback and contributions are welcome!
+// Client-side
+const remoteService = createProxy<typeof counterService>(client, "counter-service");
+const counter = await remoteService.createCounter(0);
+
+await counter.inc();  // 1
+await counter.inc();  // 2
+await counter.dec();  // 1
+console.log(await counter.current()); // 1
+
+// Optional: Manual cleanup
+import { release } from 'r-rpc';
+release(counter);
+```
+
+### Limitations
+
+- Closures persist until garbage collection or manual release
+- No support for returning iterators/observables as function references
+- Function references must be properly cleaned up to avoid memory leaks
+
+## Project Status
+
+While r-rpc is used in production applications, it is still under active development and may undergo changes. Feedback and contributions are welcome!
 
 ## License
 
